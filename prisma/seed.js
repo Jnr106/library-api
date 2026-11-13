@@ -1,8 +1,36 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
+    const librarianName = process.env.LIBRARIAN_NAME;
+  const librarianEmail = process.env.LIBRARIAN_EMAIL;
+  const librarianPassword = process.env.LIBRARIAN_PASSWORD;
+
+  if (!librarianName || !librarianEmail || !librarianPassword) {
+    throw new Error('Missing librarian environment variables.');
+  }
+
+    // Create or update the librarian account
+    const hashedPassword = await bcrypt.hash(librarianPassword, 12);
+
+  await prisma.user.upsert({
+    where: {
+      email: process.env.LIBRARIAN_EMAIL,
+    },
+    update: {
+      name: process.env.LIBRARIAN_NAME,
+      password: hashedPassword,
+      role: 'LIBRARIAN',
+    },
+    create: {
+      name: process.env.LIBRARIAN_NAME,
+      email: process.env.LIBRARIAN_EMAIL,
+      password: hashedPassword,
+      role: 'LIBRARIAN',
+    },
+  });
   // Create the three genres
   const fiction = await prisma.genre.upsert({
     where: { name: 'Fiction' },
@@ -49,6 +77,7 @@ async function main() {
 
   console.log('Seed completed successfully!');
   console.log('3 genres and 10 books are available in the database.');
+  console.log('Librarian account created or updated.');
 }
 
 main()
